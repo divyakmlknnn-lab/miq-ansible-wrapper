@@ -1,0 +1,28 @@
+---
+- name: Clone public GitHub repo (bypass MIQ SCM sync)
+  hosts: localhost
+  gather_facts: no
+  vars:
+    target_repo: "https://github.com/divyakmlknnn-lab/miq-gcp-tf-vm-demo.git"
+    target_branch: "main"
+    dest_dir: "/var/www/miq_tmp/ansible-checkout/{{ lookup('pipe', 'uuidgen') }}"
+  tasks:
+    - name: Ensure destination exists
+      file:
+        path: "{{ dest_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Clone repo (ignore SSL issues)
+      git:
+        repo: "{{ target_repo }}"
+        dest: "{{ dest_dir }}"
+        version: "{{ target_branch }}"
+        force: yes
+        accept_hostkey: yes
+        update: yes
+        validate_certs: no
+
+    - name: Show path
+      debug:
+        msg: "Cloned into {{ dest_dir }}"
