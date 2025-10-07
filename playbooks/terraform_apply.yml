@@ -1,39 +1,24 @@
-- name: Apply Terraform in dest_dir
+---
+- name: Terraform APPLY
   hosts: localhost
-  gather_facts: false
-  become: yes
+  gather_facts: no
   vars:
-    # Where your TF repo was cloned by the first catalog item:
-    dest_dir: /var/www/miq_tmp/ansible-checkout
-    tf_version: "1.6.6"
-    terraform_bin: /usr/local/bin/terraform
+    dest_dir: "/var/www/miq_tmp/tf-workdir"   
   tasks:
-    - name: Ensure unzip is installed
-      package:
-        name: unzip
-        state: present
+    - name: Ensure workdir exists
+      file:
+        path: "{{ dest_dir }}"
+        state: directory
+        mode: "0755"
 
-    - name: Install Terraform if not present
-      shell: |
-        set -e
-        if [ ! -x "{{ terraform_bin }}" ]; then
-          tmp=$(mktemp -d)
-          cd "$tmp"
-          curl -L -o terraform.zip https://releases.hashicorp.com/terraform/{{ tf_version }}/terraform_{{ tf_version }}_linux_amd64.zip
-          unzip terraform.zip
-          install -m 0755 terraform {{ terraform_bin }}
-          cd /
-          rm -rf "$tmp"
-        fi
-      args:
-        executable: /bin/bash
-
-    - name: Terraform init (upgrade providers)
-      shell: terraform -chdir={{ dest_dir }} init -upgrade
-      args:
-        executable: /bin/bash
+    - name: Terraform init
+      command: terraform -chdir={{ dest_dir }} init -upgrade
+      register: tf_init
+    - debug: var=tf_init.stdout_lines
 
     - name: Terraform apply
-      shell: terraform -chdir={{ dest_dir }} apply -auto-approve
-      args:
-        executable: /bin/bash
+      environment:
+        GOOGLE_APPLICATION_CREDENTIALS: "/var/www/miq_tmp/creds/gcp.json"
+      command: terraform -chdir={{ dest_dir }} apply -auto-approve
+      register: tf_apply
+    - debug: var=tf_apply.stdout_lines
