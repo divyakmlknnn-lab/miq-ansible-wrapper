@@ -1,11 +1,11 @@
 ---
-- name: Clone public GitHub repo (bypass MIQ SCM sync)
+- name: Clone public GitHub repo
   hosts: localhost
   gather_facts: no
   vars:
     target_repo: "https://github.com/divyakmlknnn-lab/miq-gcp-tf-vm-demo.git"
     target_branch: "main"
-    dest_dir: "/var/www/miq_tmp/ansible-checkout/{{ lookup('pipe', 'uuidgen') }}"
+    dest_dir: "/var/www/miq_tmp/tf-workdir"   
   tasks:
     - name: Ensure destination exists
       file:
