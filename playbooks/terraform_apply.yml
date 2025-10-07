@@ -1,0 +1,39 @@
+- name: Apply Terraform in dest_dir
+  hosts: localhost
+  gather_facts: false
+  become: yes
+  vars:
+    # Where your TF repo was cloned by the first catalog item:
+    dest_dir: /var/www/miq_tmp/ansible-checkout
+    tf_version: "1.6.6"
+    terraform_bin: /usr/local/bin/terraform
+  tasks:
+    - name: Ensure unzip is installed
+      package:
+        name: unzip
+        state: present
+
+    - name: Install Terraform if not present
+      shell: |
+        set -e
+        if [ ! -x "{{ terraform_bin }}" ]; then
+          tmp=$(mktemp -d)
+          cd "$tmp"
+          curl -L -o terraform.zip https://releases.hashicorp.com/terraform/{{ tf_version }}/terraform_{{ tf_version }}_linux_amd64.zip
+          unzip terraform.zip
+          install -m 0755 terraform {{ terraform_bin }}
+          cd /
+          rm -rf "$tmp"
+        fi
+      args:
+        executable: /bin/bash
+
+    - name: Terraform init (upgrade providers)
+      shell: terraform -chdir={{ dest_dir }} init -upgrade
+      args:
+        executable: /bin/bash
+
+    - name: Terraform apply
+      shell: terraform -chdir={{ dest_dir }} apply -auto-approve
+      args:
+        executable: /bin/bash
